@@ -1,0 +1,81 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  login        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("employee") // admin | employee
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("users")
+}
+
+model Service {
+  id          Int     @id @default(autoincrement())
+  title       String
+  price       Int
+  durationMin Int     @map("duration_min")
+  description String?
+
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+model Appointment {
+  id                     Int      @id @default(autoincrement())
+  clientName             String   @map("client_name")
+  clientPhone            String   @map("client_phone")
+  clientTelegramId       String?  @map("client_telegram_id")
+  clientTelegramUsername String?  @map("client_telegram_username")
+  serviceId              Int?     @map("service_id")
+  service                Service? @relation(fields: [serviceId], references: [id])
+  masterId               Int?     @map("master_id")
+  date                   String // YYYY-MM-DD
+  time                   String // HH:MM
+  status                 String   @default("new") // new | confirmed | done | canceled
+  comment                String?
+  source                 String   @default("telegram")
+  createdAt              DateTime @default(now()) @map("created_at")
+
+  @@map("appointments")
+}
+
+model Review {
+  id               Int      @id @default(autoincrement())
+  clientName       String?  @map("client_name")
+  clientTelegramId String?  @map("client_telegram_id")
+  text             String
+  rating           Int // 1-5
+  status           String   @default("new") // new | published | hidden
+  createdAt        DateTime @default(now()) @map("created_at")
+
+  @@map("reviews")
+}
+
+model KnowledgeBase {
+  id    Int    @id @default(autoincrement())
+  key   String @unique // work_hours | address | phone
+  value String
+
+  @@map("knowledge_base")
+}
+
+model Dialog {
+  id          Int      @id @default(autoincrement())
+  telegramId  String   @map("telegram_id")
+  messageUser String   @map("message_user")
+  messageBot  String?  @map("message_bot")
+  intent      String? // booking | price | hours | address | review | other
+  createdAt   DateTime @default(now()) @map("created_at")
+
+  @@map("dialogs")
+}

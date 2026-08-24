@@ -1,0 +1,67 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+generator client {
+  provider = "prisma-client-js"
+}
+model User {
+  id           Int      @id @default(autoincrement())
+  login        String   @unique
+  passwordHash String   @map("password_hash")
+  role         String   @default("employee")
+  name         String
+  createdAt    DateTime @default(now()) @map("created_at")
+  @@map("users")
+}
+model Service {
+  id          Int     @id @default(autoincrement())
+  title       String
+  price       Int
+  durationMin Int     @map("duration_min")
+  description String?
+  appointments Appointment[]
+  @@map("services")
+}
+model Appointment {
+  id                     Int      @id @default(autoincrement())
+  clientName             String   @map("client_name")
+  clientPhone            String   @map("client_phone")
+  clientTelegramId       String?  @map("client_telegram_id")
+  clientTelegramUsername String?  @map("client_telegram_username")
+  serviceId              Int?     @map("service_id")
+  service                Service? @relation(fields: [serviceId], references: [id])
+  masterId               Int?     @map("master_id")
+  date                   String
+  time                   String
+  status                 String   @default("new")
+  comment                String?
+  source                 String   @default("telegram")
+  createdAt              DateTime @default(now()) @map("created_at")
+  @@map("appointments")
+}
+model Review {
+  id               Int      @id @default(autoincrement())
+  clientName       String?  @map("client_name")
+  clientTelegramId String?  @map("client_telegram_id")
+  text             String
+  rating           Int
+  status           String   @default("new")
+  createdAt        DateTime @default(now()) @map("created_at")
+  @@map("reviews")
+}
+model KnowledgeBase {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+  @@map("knowledge_base")
+}
+model Dialog {
+  id          Int      @id @default(autoincrement())
+  telegramId  String   @map("telegram_id")
+  messageUser String   @map("message_user")
+  messageBot  String?  @map("message_bot")
+  intent      String?
+  createdAt   DateTime @default(now()) @map("created_at")
+  @@map("dialogs")
+}

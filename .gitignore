@@ -1,0 +1,12 @@
+node_modules
+.next
+dist
+.env
+!.env.example
+pgdata
+*.log
+.DS_Store
+Thumbs.db
+.idea
+.vscode
+coverage
