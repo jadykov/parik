@@ -183,7 +183,26 @@ if (token && !token.includes("PUT_YOUR")) {
   });
 
   bot.catch((err) => console.error("Bot error", err));
-  bot.launch().then(() => console.log("Bot started — polling")).catch(console.error);
+
+  async function launchWithRetry() {
+    for (let attempt = 1; ; attempt++) {
+      try {
+        await bot.launch({ dropPendingUpdates: true });
+        console.log("Bot started — polling");
+        break;
+      } catch (e: any) {
+        const msg = e?.message || String(e);
+        const is409 = msg.includes("409") || e?.response?.error_code === 409;
+        const delay = is409 ? 60000 : Math.min(5000 * attempt, 30000);
+        console.error(`Bot launch attempt ${attempt} failed${is409 ? " (409 Conflict — другой instance держит polling, жду 60с)" : ""}:`, msg.slice(0, 500));
+        if (e?.response) console.error("response:", JSON.stringify(e.response).slice(0, 400));
+        console.log(`Retry in ${delay / 1000}s...`);
+        await new Promise((r) => setTimeout(r, delay));
+      }
+    }
+  }
+  launchWithRetry();
+
   process.once("SIGINT", () => bot.stop("SIGINT"));
   process.once("SIGTERM", () => bot.stop("SIGTERM"));
 } else {
