@@ -84,6 +84,91 @@ cd bot && npm install && BOT_TOKEN=xxx DATABASE_URL=... npm run dev
   project_parikmaherskaya.md — план
 ```
 
+## Деплой на VPS Ubuntu 24.04 — для новичка (шаг за шагом)
+
+### 1. Зайти на VPS
+```bash
+ssh root@ТВОЙ_IP
+# или ssh user@ТВОЙ_IP
+```
+
+### 2. Обновить и поставить Docker + Git
+```bash
+sudo apt update && sudo apt upgrade -y
+sudo apt install -y docker.io docker-compose-plugin git nano curl
+sudo systemctl enable --now docker
+docker --version
+docker compose version
+```
+Если не `root` — добавь себя в группу docker и перелогинься:
+```bash
+sudo usermod -aG docker $USER
+# выйти из ssh и зайти заново
+docker ps
+```
+
+### 3. Скачать проект
+```bash
+cd ~
+git clone https://github.com/jadykov/parik.git
+cd parik
+ls -la
+```
+
+### 4. Настроить .env
+```bash
+cp .env.example .env
+nano .env
+```
+Замени `BOT_TOKEN=PUT_YOUR` → токен от @BotFather. При желании смени `NEXTAUTH_SECRET`. Сохранить: `Ctrl+O` → `Enter` → `Ctrl+X`. Проверка: `cat .env`.
+
+### 5. Запустить (billing 2-4 мин на первую сборку)
+```bash
+docker compose up --build -d
+docker ps
+# 3 контейнера: barbershop_db (healthy), barbershop_app, barbershop_bot
+docker logs barbershop_db --tail 20
+docker logs barbershop_app --tail 30
+docker logs barbershop_bot --tail 30
+# у бота должно быть: Bot started — polling (если 409 Conflict — подожди 60с, ретрай в bot/src/index.ts:187)
+```
+
+### 6. База (первый раз)
+```bash
+docker compose exec app npx prisma db seed
+# Seed done: admin/admin123, 4 services, knowledge_base
+# если пусто:
+docker compose exec app npx prisma db push --accept-data-loss
+docker compose exec app npx prisma db seed
+```
+
+### 7. Открыть порты (если ufw)
+```bash
+sudo ufw allow 3000/tcp
+sudo ufw allow 22/tcp
+sudo ufw enable
+sudo ufw status
+```
+
+### 8. Проверка
+```bash
+curl -I http://localhost:3000
+curl http://localhost:3000/api/services
+```
+Браузер: `http://ТВОЙ_IP:3000`, админка `http://ТВОЙ_IP:3000/login` → `admin` / `admin123`, бот `@epersona_bot` → `/start`.
+
+### Полезные команды
+```bash
+docker compose ps
+docker compose logs -f
+docker compose logs -f bot
+docker compose restart bot
+docker compose down
+docker compose up -d
+git pull origin main
+docker compose up --build -d
+```
+
 ## Далее — Этап 7 Деплой (по желанию)
 - `docker-compose.prod.yml` (без volumes на исходники, `next start` вместо `next dev`)
 - VPS (Timeweb/Reg.ru) + домен + `BOT_TOKEN` прод
